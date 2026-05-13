@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MBTI 相性診断</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:sans-serif;
+}
+
+body{
+
+    min-height:100vh;
+
+    background:
+    radial-gradient(circle at top,#35210d,#0d0d0d 60%);
+
+    color:white;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    padding:12px;
+
+    overflow-x:hidden;
+
+}
+
+/* 背景 */
+
+body::before{
+
+    content:"";
+
+    position:fixed;
+
+    width:200%;
+    height:200%;
+
+    background-image:
+    radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+
+    background-size:40px 40px;
+
+    animation:bgMove 40s linear infinite;
+
+}
+
+@keyframes bgMove{
+
+    from{
+        transform:translate(0,0);
+    }
+
+    to{
+        transform:translate(-120px,-120px);
+    }
+
+}
+
+/* 本体 */
+
+.container{
+
+    width:100%;
+    max-width:390px;
+
+    background:rgba(24,24,24,.95);
+
+    border-radius:28px;
+
+    padding:18px;
+
+    position:relative;
+    z-index:1;
+
+    backdrop-filter:blur(10px);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    box-shadow:
+    0 0 40px rgba(255,140,0,.12);
+
+}
+
+/* タイトル */
+
+.title{
+
+    text-align:center;
+
+    font-size:28px;
+
+    font-weight:bold;
+
+    margin-bottom:10px;
+
+}
+
+/* 切替 */
+
+.toggle-wrap{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    margin-bottom:14px;
+
+}
+
+.toggle{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    background:#222;
+
+    padding:8px 12px;
+
+    border-radius:999px;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    font-size:13px;
+
+    color:#ddd;
+
+}
+
+.toggle input{
+
+    width:17px;
+    height:17px;
+
+    accent-color:#ff9d00;
+
+}
+
+/* セレクト */
+
+.selects{
+
+    display:flex;
+    flex-direction:column;
+
+    gap:12px;
+
+}
+
+select{
+
+    width:100%;
+
+    padding:14px;
+
+    border:none;
+
+    border-radius:14px;
+
+    background:#222;
+
+    color:white;
+
+    font-size:15px;
+
+    outline:none;
+
+    border:1px solid rgba(255,255,255,.08);
+
+}
+
+/* ボタン */
+
+button{
+
+    width:100%;
+
+    margin-top:15px;
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:14px;
+
+    background:
+    linear-gradient(90deg,#ff4343,#ff7b00);
+
+    color:white;
+
+    font-size:17px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+
+}
+
+/* 結果 */
+
+.result{
+
+    margin-top:20px;
+
+}
+
+/* パーセント */
+
+.percent{
+
+    text-align:center;
+
+    font-size:68px;
+
+    font-weight:bold;
+
+    color:#ffd166;
+
+    text-shadow:
+    0 0 20px rgba(255,209,102,.35);
+
+}
+
+/* ランク */
+
+.rank{
+
+    text-align:center;
+
+    margin-top:-6px;
+
+    font-size:26px;
+
+    font-weight:bold;
+
+    letter-spacing:2px;
+
+}
+
+/* グラフ */
+
+.chart-box{
+
+    margin-top:10px;
+
+    background:#222;
+
+    border-radius:20px;
+
+    padding:4px;
+
+}
+
+canvas{
+
+    max-height:180px !important;
+
+}
+
+/* 折りたたみ */
+
+details{
+
+    margin-top:12px;
+
+    background:#2a2a2a;
+
+    border-radius:16px;
+
+    overflow:hidden;
+
+    border:1px solid rgba(255,255,255,.05);
+
+}
+
+summary{
+
+    list-style:none;
+
+    padding:16px;
+
+    cursor:pointer;
+
+    font-weight:bold;
+
+    color:#ffd166;
+
+    font-size:16px;
+
+}
+
+summary::-webkit-details-marker{
+
+    display:none;
+
+}
+
+.detail-content{
+
+    padding:0 16px 16px;
+
+    line-height:1.7;
+
+    color:#ddd;
+
+    font-size:14px;
+
+}
+
+.detail-content h3{
+
+    margin-top:10px;
+
+    margin-bottom:4px;
+
+    color:#ffd166;
+
+}
+
+/* シェア */
+
+.share-btn{
+
+    margin-top:14px;
+
+    background:
+    linear-gradient(90deg,#5865f2,#8b5cf6);
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="title">
+        MBTI 相性診断
+    </div>
+
+    <!-- 切替 -->
+
+    <div class="toggle-wrap">
+
+        <label class="toggle">
+
+            <input type="checkbox" id="advancedMode">
+
+            <span>32タイプ診断</span>
+
+        </label>
+
+    </div>
+
+    <!-- セレクト -->
+
+    <div class="selects">
+
+        <select id="type1"></select>
+        <select id="type2"></select>
+
+    </div>
+
+    <!-- ボタン -->
+
+    <button onclick="startTest()">
+        診断する
+    </button>
+
+    <!-- 結果 -->
+
+    <div class="result">
+
+        <!-- % -->
+
+        <div class="percent" id="percent">
+            0%
+        </div>
+
+        <!-- ランク -->
+
+        <div class="rank" id="rank">
+            相性 S
+        </div>
+
+        <!-- グラフ -->
+
+        <div class="chart-box">
+
+            <canvas id="radarChart"></canvas>
+
+        </div>
+
+        <!-- 折りたたみ -->
+
+        <details>
+
+            <summary>
+                 相性ポイントを見る ▼
+            </summary>
+
+            <div class="detail-content">
+
+                <h3>💖 恋愛</h3>
+                <p id="loveText"></p>
+
+                <h3>🤝 友情</h3>
+                <p id="friendText"></p>
+
+                <h3>🕒 長続き度</h3>
+                <p id="longText"></p>
+
+                <h3>⚡ 注意ポイント</h3>
+                <p id="warnText"></p>
+
+            </div>
+
+        </details>
+
+        <!-- シェア -->
+
+        <button class="share-btn" onclick="shareResult()">
+            シェアする
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+/* 基本タイプ */
+
+const baseTypes = [
+
+"INTJ","INTP","ENTJ","ENTP",
+"INFJ","INFP","ENFJ","ENFP",
+"ISTJ","ISFJ","ESTJ","ESFJ",
+"ISTP","ISFP","ESTP","ESFP"
+
+];
+
+let advancedEnabled = false;
+
+/* セレクト */
+
+const select1 =
+document.getElementById("type1");
+
+const select2 =
+document.getElementById("type2");
+
+/* タイプ取得 */
+
+function getTypes(){
+
+if(advancedEnabled){
+
+    const list = [];
+
+    baseTypes.forEach(type=>{
+
+        list.push(type + "-A");
+        list.push(type + "-T");
+
+    });
+
+    return list;
+
+}
+
+return baseTypes;
+
+}
+
+/* 更新 */
+
+function updateSelects(){
+
+select1.innerHTML = "";
+select2.innerHTML = "";
+
+const types = getTypes();
+
+types.forEach(type=>{
+
+    const op1 =
+    document.createElement("option");
+
+    op1.value = type;
+    op1.innerText = type;
+
+    select1.appendChild(op1);
+
+    const op2 =
+    document.createElement("option");
+
+    op2.value = type;
+    op2.innerText = type;
+
+    select2.appendChild(op2);
+
+});
+
+if(advancedEnabled){
+
+    select1.value = "INFP-A";
+    select2.value = "ENFJ-T";
+
+}else{
+
+    select1.value = "INFP";
+    select2.value = "ENFJ";
+
+}
+
+}
+
+updateSelects();
+
+/* 切替 */
+
+document
+.getElementById("advancedMode")
+
+.addEventListener("change",e=>{
+
+advancedEnabled = e.target.checked;
+
+updateSelects();
+
+startTest();
+
+});
+
+/* 相性 */
+
+function getCompatibility(type1,type2){
+
+let seed = 0;
+
+const combined =
+[type1,type2].sort().join("");
+
+for(let i=0;i<combined.length;i++){
+
+    seed += combined.charCodeAt(i);
+
+}
+
+let romance =
+60 + (seed % 41);
+
+let friendship =
+55 + (seed % 41);
+
+let longTerm =
+50 + (seed % 46);
+
+let emotional =
+65 + (seed % 31);
+
+let trust =
+60 + (seed % 36);
+
+if(advancedEnabled){
+
+const isT1 =
+type1.includes("-T");
+
+const isT2 =
+type2.includes("-T");
+
+if(isT1 && isT2){
+
+    emotional += 8;
+
+}
+
+if(!isT1 && !isT2){
+
+    friendship += 5;
+
+}
+
+if(isT1 !== isT2){
+
+    longTerm -= 5;
+
+}
+
+}
+
+return {
+
+romance,
+friendship,
+longTerm,
+emotional,
+trust
+
+};
+
+}
+
+/* グラフ */
+
+const radarChart =
+new Chart(document.getElementById("radarChart"),{
+
+type:'radar',
+
+data:{
+
+labels:[
+'感情',
+'恋愛',
+'友情',
+'信頼',
+'長続き'
+],
+
+datasets:[{
+
+label:'相性',
+
+data:[70,70,70,70,70]
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+legend:{
+labels:{
+color:'white'
+}
+}
+},
+
+scales:{
+r:{
+
+min:0,
+max:100,
+
+ticks:{
+color:'white',
+backdropColor:'transparent'
+},
+
+pointLabels:{
+color:'white'
+},
+
+grid:{
+color:'rgba(255,255,255,.18)'
+},
+
+angleLines:{
+color:'rgba(255,255,255,.18)'
+}
+
+}
+}
+
+}
+
+});
+
+/* 診断 */
+
+function startTest(){
+
+const type1 =
+select1.value;
+
+const type2 =
+select2.value;
+
+const result =
+getCompatibility(type1,type2);
+
+const target =
+result.romance;
+
+let current = 0;
+
+const percent =
+document.getElementById("percent");
+
+/* アニメ */
+
+const interval =
+setInterval(()=>{
+
+current++;
+
+percent.innerText =
+current + "%";
+
+if(current >= target){
+
+clearInterval(interval);
+
+}
+
+},12);
+
+/* ランク */
+
+let rank = "";
+
+if(result.romance >= 95){
+
+rank = "SS";
+
+}else if(result.romance >= 85){
+
+rank = "S";
+
+}else if(result.romance >= 75){
+
+rank = "A";
+
+}else if(result.romance >= 65){
+
+rank = "B";
+
+}else{
+
+rank = "C";
+
+}
+
+document.getElementById("rank")
+.innerText =
+
+"相性 " + rank;
+
+/* 軽めコメント */
+
+document.getElementById("loveText")
+.innerText =
+
+result.romance +
+"% - " +
+
+(result.romance >= 90
+? "ガチで相性強すぎる！"
+: result.romance >= 75
+? "一緒にいると楽しすぎる！"
+: "意外と振り回されるかも…！");
+
+document.getElementById("friendText")
+.innerText =
+
+result.friendship +
+"% - " +
+
+(result.friendship >= 90
+? "親友コース入ってる！"
+: result.friendship >= 75
+? "ノリ合いすぎる！"
+: "距離感ミスると気まずいかも！");
+
+document.getElementById("longText")
+.innerText =
+
+result.longTerm +
+"% - " +
+
+(result.longTerm >= 90
+? "この組み合わせかなり続く！"
+: result.longTerm >= 75
+? "安定感かなりある！"
+: "急に冷めないよう注意！");
+
+document.getElementById("warnText")
+.innerText =
+
+(result.romance >= 90
+? "依存しすぎ注意かも！"
+: result.romance <= 65
+? "ケンカ増える可能性あり！"
+: "本音隠しすぎないの大事！");
+
+/* グラフ */
+
+radarChart.data.datasets[0].data = [
+
+result.emotional,
+result.romance,
+result.friendship,
+result.trust,
+result.longTerm
+
+];
+
+radarChart.update();
+
+}
+
+/* シェア */
+
+async function shareResult(){
+
+const text =
+
+"MBTI 相性診断\n\n" +
+
+document.getElementById("percent").innerText
++ "\n" +
+
+document.getElementById("rank").innerText
++ "\n\n" +
+
+location.href;
+
+if(navigator.share){
+
+await navigator.share({
+
+title:"MBTI 相性診断",
+text:text
+
+});
+
+}else{
+
+navigator.clipboard.writeText(text);
+
+alert("結果をコピーしたよ！");
+
+}
+
+}
+
+startTest();
+
+</script>
+
+</body>
+</html>　
+
