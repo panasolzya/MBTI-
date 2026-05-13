@@ -3,5 +3,5 @@
 シンプルな相性診断サイトです。
 
 ## URL
-https://panasolzyagithub.io/MBTI/
+https//パナルジャgithub.io/MBTI/
 
